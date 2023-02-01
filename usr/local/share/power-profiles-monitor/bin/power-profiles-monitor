@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# Logger
+lpm_logger () {
+    logger -t power-profiles-monitor -s "$1"
+}
+
+# Governor
+set_power_target () {
+    case $1 in
+        performance|balanced|power-saver)
+            systemctl ${SYSTEMD_USER} start power-profile-$1.target
+            ;;
+        *)
+            lpm_logger "Error in [power target] configuration!"
+            ;;
+    esac
+}
+
+#######################################################
+
+unset SYSTEMD_USER
+if [[ $EUID -ne 0 ]]; then
+   SYSTEMD_USER="--user"
+fi
+
+#######################################################
+
+# Monitor
+dbus-monitor --system "type='signal',path='/net/hadess/PowerProfiles',member='PropertiesChanged'" | while read LINE; do
+    POWER_PROFILE_SW=$(echo ${LINE} | grep 'variant' | sed -e 's/variant//g' -e 's/string//g' -e 's/\ //g' -e 's/"//g')
+    if [[ -n "${POWER_PROFILE_SW}" ]]; then
+        case ${POWER_PROFILE_SW} in
+            performance)
+                set_power_target performance
+                ;;
+            balanced)
+                set_power_target balanced
+                ;;
+            power-saver)
+                set_power_target power-saver
+                ;;
+            *)
+                lpm_logger "Error getting power profile: [${POWER_PROFILE_SW}]!"
+                ;;
+        esac
+    fi
+done
