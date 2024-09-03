@@ -2,7 +2,7 @@
 Description=Power profiles monitor
 
 [Service]
-ExecStart=/usr/local/share/power-profiles-monitor/bin/power-profiles-monitor
+ExecStart=/usr/local/libexec/power-profiles-monitor
 Restart=on-failure
 
 [Install]
