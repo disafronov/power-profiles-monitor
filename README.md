@@ -2,4 +2,4 @@
 
 Start/stop systemd targets on power profile change
 
-Remember to run setup script and reboot laptop.
+Remember to enable both system and global user services. And reboot.
