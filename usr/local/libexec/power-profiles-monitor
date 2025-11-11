@@ -9,7 +9,11 @@ lpm_logger () {
 set_power_target () {
     case $1 in
         performance|balanced|power-saver)
-            systemctl ${SYSTEMD_USER} start power-profile-$1.target
+            if [[ $EUID -ne 0 ]]; then
+                systemctl --user start "power-profile-$1.target"
+            else
+                systemctl start "power-profile-$1.target"
+            fi
             ;;
         *)
             lpm_logger "Error in [power target] configuration!"
@@ -19,16 +23,9 @@ set_power_target () {
 
 #######################################################
 
-unset SYSTEMD_USER
-if [[ $EUID -ne 0 ]]; then
-   SYSTEMD_USER="--user"
-fi
-
-#######################################################
-
 # Monitor
-dbus-monitor --system "type='signal',path='/net/hadess/PowerProfiles',member='PropertiesChanged'" | while read LINE; do
-    POWER_PROFILE_SW=$(echo ${LINE} | grep 'variant' | sed -e 's/variant//g' -e 's/string//g' -e 's/\ //g' -e 's/"//g')
+dbus-monitor --system "type='signal',path='/net/hadess/PowerProfiles',member='PropertiesChanged'" | while read -r LINE; do
+    POWER_PROFILE_SW=$(echo "${LINE}" | grep 'variant' | sed -e 's/variant//g' -e 's/string//g' -e 's/\ //g' -e 's/"//g')
     if [[ -n "${POWER_PROFILE_SW}" ]]; then
         case ${POWER_PROFILE_SW} in
             performance)
